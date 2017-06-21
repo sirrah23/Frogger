@@ -63,9 +63,18 @@
         [new-pos-y(+ (pos-y (rect-pos r)) dispy)])
     (if (> new-pos-x WIDTH) (rect (pos (- 0 (rect-width r)) new-pos-y) (rect-width r) (rect-height r))
         (rect (pos new-pos-x new-pos-y) (rect-width r) (rect-height r)))))
-  
+
+(define (collission-rects rectA rectB)
+  (if (or (>= (pos-x (rect-pos rectA)) (+ (pos-x (rect-pos rectB)) (rect-width rectB)))  ; Right
+          (<= (+ (pos-x (rect-pos rectA)) (rect-width rectA)) (pos-x (rect-pos rectB)))  ; Left
+          (>= (pos-y (rect-pos rectA)) (+ (pos-y (rect-pos rectB)) (rect-height rectB))) ; Below
+          (<= (+ (pos-y (rect-pos rectA)) (rect-height rectA)) (pos-y (rect-pos rectB)))) ; Above
+      #f
+      #t))
+
+
 (define (loop)
-  ; TODO: Collission detection HERE
+  (if (collission-rects game-frog car-A) (write "HIT YO") #f)
   (send canvas  on-paint)
   (sleep/yield 0.02)
   (loop))

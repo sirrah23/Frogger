@@ -64,6 +64,9 @@
 
 (define game-frog (rect (pos (- (/ WIDTH 2) 25) (- HEIGHT 50)) 50 50))
 
+(define (reset-frog)
+  (set! game-frog (rect (pos (- (/ WIDTH 2) 25) (- HEIGHT 50)) 50 50)))
+
 (define (move-rect r dispx dispy)
   (rect (pos (+ (pos-x (rect-pos r)) dispx)
              (+ (pos-y (rect-pos r)) dispy))
@@ -93,7 +96,9 @@
   (ormap (lambda (b) b) (map (lambda (x) (collission-rects rect x)) (lane-cars lane))))
 
 (define (loop)
-  (if (collission-lane game-frog lane-A) (write "HIT") #f) ; TODO - Collission Logic and World Update function
+  (if (collission-lane game-frog lane-A) (reset-frog) #f) ; TODO - Collission Logic and World Update function
+  (if (collission-lane game-frog lane-B) (reset-frog) #f) ; TODO - Collission Logic and World Update function
+  (if (collission-lane game-frog lane-C) (reset-frog) #f) ; TODO - Collission Logic and World Update function
   (send canvas  on-paint)
   (sleep/yield 0.02)
   (loop))

@@ -2,20 +2,24 @@
 
 (require racket/gui)
 
+; Global State
 (define WIDTH 800)
 (define HEIGHT 800)
 (define STEP 50)
+
+; Some brushes for drawing stuff
 (define green-brush (make-object brush% "GREEN" 'solid))
 (define gray-brush (make-object brush% "GRAY" 'solid))
 (define brown-brush (make-object brush% "BROWN" 'solid))
 (define blue-brush (make-object brush% "BLUE" 'solid))
 
-(define frame (new frame%
+; Window/Canvas Objects
+(define frogger-frame (new frame%
                    [label "Frogger"]
                    [width WIDTH]
                    [height HEIGHT]))
 
-(define f-canvas
+(define frogger-canvas-class
   (class canvas%
     (define/override (on-char event)
       (cond [(eq? (send event get-key-code) 'left)
@@ -28,8 +32,8 @@
              (set! game-frog (move-frog game-frog 0 STEP))]))
   (super-new)))
 
-(define canvas (new f-canvas
-                    [parent frame]
+(define frogger-canvas (new frogger-canvas-class
+                    [parent frogger-frame]
                     [paint-callback (lambda (canvas dc)
                                       (send dc clear)
                                       (show-lane lane-A)
@@ -42,23 +46,25 @@
                                       (show-lane lane-H)
                                       (show-rect (frog-rect game-frog) green-brush))]))
 
-(define dc (send canvas get-dc))
+(define frogger-dc (send frogger-canvas get-dc))
 
-(send frame show #t)
+(send frogger-frame show #t)
 
 (struct pos (x y))
 (struct rect (pos width height))
-(struct lane (height dir cars speed type))
+(struct lane (height dir vehicles speed type))
 (struct frog (rect vel))
 (define frog-stuck 0)
 
-(define (make-lane lane-height dir numcars car-width car-height speed type)
-  (define (inner-make-lane cars lane-height dir numcarsleft)
-    (if (eq? 0 numcarsleft) (lane lane-height dir cars speed type)
+(define (make-lane lane-height dir numvehicles vehicle-width vehicle-height speed type)
+  (define (inner-make-lane vehicles lane-height dir numvehiclesleft)
+    (if (eq? 0 numvehiclesleft) (lane lane-height dir vehicles speed type)
         (inner-make-lane
-         (cons (rect (pos (+ (* 3 STEP (- numcars numcarsleft)) (* car-width (- numcars numcarsleft))) lane-height) car-width car-height) cars)
-                         lane-height dir (- numcarsleft 1))))
-  (inner-make-lane '() lane-height dir numcars))
+         (cons
+          (rect (pos (+ (* 3 STEP (- numvehicles numvehiclesleft)) (* vehicle-width (- numvehicles numvehiclesleft))) lane-height)
+                vehicle-width vehicle-height) vehicles)
+                         lane-height dir (- numvehiclesleft 1))))
+  (inner-make-lane '() lane-height dir numvehicles))
  
 (define lane-A (make-lane (- HEIGHT 100) -1 3 150 50 8 'car))
 (define lane-B (make-lane (- HEIGHT 150) 1 3 150 50 3 'car))
@@ -70,24 +76,23 @@
 (define lane-H (make-lane (- HEIGHT 700) -1 3 150 50 8 'log))
 
 (define (show-rect r brush)
-  (send dc set-brush brush)
-  (send dc draw-rectangle (pos-x (rect-pos r))
+  (send frogger-dc set-brush brush)
+  (send frogger-dc draw-rectangle (pos-x (rect-pos r))
         (pos-y (rect-pos r)) (rect-width r) (rect-height r)))
-
-(define (show-lane-bkgrnd height brush)
-  (show-rect (rect (pos 0 height) WIDTH 50) brush))
-
-(define (show-lane lane)
-  (if (eq? (lane-type lane) 'car)
-      (show-rects (lane-cars lane) gray-brush)
-      (begin
-        (show-lane-bkgrnd (lane-height lane) blue-brush)
-        (show-rects (lane-cars lane) brown-brush))))
-       
 
 (define (show-rects rlist brush)
   (map (lambda (r) (show-rect r brush)) rlist))
 
+(define (show-lane lane)
+  (if (eq? (lane-type lane) 'car)
+      (show-rects (lane-vehicles lane) gray-brush)
+      (begin
+        (show-lane-bkgrnd (lane-height lane) blue-brush)
+        (show-rects (lane-vehicles lane) brown-brush))))
+
+(define (show-lane-bkgrnd height brush)
+  (show-rect (rect (pos 0 height) WIDTH 50) brush))
+       
 (define game-frog (frog (rect (pos (- (/ WIDTH 2) 25) (- HEIGHT 50)) 50 50) (pos 0 0)))
 
 (define (reset-frog)
@@ -99,14 +104,14 @@
 (define (move-frog-log f)
   (move-frog f (pos-x (frog-vel f)) 0))
 
-(define (stick-frog f flane)
-  (define (inner-stick-frog cars)
-    (if (eq? cars '()) (reset-frog)
-      (if (not (collission-rects (frog-rect f) (car cars))) (inner-stick-frog (cdr cars))
+(define (stick-frog-to-log f flane)
+  (define (inner-stick-frog-to-log vehicles)
+    (if (eq? vehicles '()) (reset-frog)
+      (if (not (collission-rects (frog-rect f) (car vehicles))) (inner-stick-frog-to-log (cdr vehicles))
           (begin
             (set! game-frog (frog (frog-rect f) (pos (* (lane-dir flane)(lane-speed flane)) 0)))
             (set! frog-stuck 1)))))
-  (inner-stick-frog (lane-cars flane)))
+  (inner-stick-frog-to-log (lane-vehicles flane)))
           
 (define (move-rect r dispx dispy)
   (rect (pos (+ (pos-x (rect-pos r)) dispx)
@@ -122,11 +127,21 @@
           [else (rect (pos new-pos-x new-pos-y) (rect-width r) (rect-height r))])))
 
 (define (move-lane-wrap lane)
-  (map (lambda (x) (move-rect-wrap x (* (lane-speed lane) (lane-dir lane)) 0)) (lane-cars lane)))
+  (map (lambda (x) (move-rect-wrap x (* (lane-speed lane) (lane-dir lane)) 0)) (lane-vehicles lane)))
+
+(define (move-lane-tick l)
+  (lane (lane-height l) (lane-dir l) (move-lane-wrap l) (lane-speed l) (lane-type l)))
 
 (define (frog-in-lane lane)
   (eq? (lane-height lane) (pos-y (rect-pos (frog-rect game-frog)))))
-  
+
+(define (frog-lane-interaction l)
+  (if (eq? (lane-type l) 'car)
+      (when (and (frog-in-lane l)
+                 (collission-lane (frog-rect game-frog) l)) (reset-frog))
+      (when (frog-in-lane l)
+        (if (not (collission-lane (frog-rect game-frog) l)) (reset-frog) (stick-frog-to-log game-frog l)))))
+        
 (define (collission-rects rectA rectB)
   (if (or (>= (pos-x (rect-pos rectA)) (+ (pos-x (rect-pos rectB)) (rect-width rectB)))   ; Right
           (<= (+ (pos-x (rect-pos rectA)) (rect-width rectA)) (pos-x (rect-pos rectB)))   ; Left
@@ -136,39 +151,31 @@
       #t))
 
 (define (collission-lane rect lane)
-  (ormap (lambda (b) b) (map (lambda (x) (collission-rects rect x)) (lane-cars lane))))
+  (ormap (lambda (b) b) (map (lambda (x) (collission-rects rect x)) (lane-vehicles lane))))
 
 ; TODO - Collission Logic and World Update function
 ; TODO - Win condition check
-(define (loop)
-  (when (and (frog-in-lane lane-A)
-      (collission-lane (frog-rect game-frog) lane-A)) (reset-frog))
-  (when (and (frog-in-lane lane-B)
-      (collission-lane (frog-rect game-frog) lane-B)) (reset-frog))
-  (when (and (frog-in-lane lane-C)
-      (collission-lane (frog-rect game-frog) lane-C)) (reset-frog))
-  (when (and (frog-in-lane lane-D)
-    (collission-lane (frog-rect game-frog) lane-D)) (reset-frog))
-  (when (and (frog-in-lane lane-E)
-      (collission-lane (frog-rect game-frog) lane-E)) (reset-frog))
-  (when (frog-in-lane lane-F)
-    (if (not (collission-lane (frog-rect game-frog) lane-F)) (reset-frog) (stick-frog game-frog lane-F)))
-  (when (frog-in-lane lane-G)
-    (if (not (collission-lane (frog-rect game-frog) lane-G)) (reset-frog) (stick-frog game-frog lane-G)))
-  (when (frog-in-lane lane-H)
-    (if (not (collission-lane (frog-rect game-frog) lane-H)) (reset-frog) (stick-frog game-frog lane-H)))
-  (set! lane-A (lane (lane-height lane-A) (lane-dir lane-A) (move-lane-wrap lane-A) (lane-speed lane-A) (lane-type lane-A)))
-  (set! lane-B (lane (lane-height lane-B) (lane-dir lane-B) (move-lane-wrap lane-B) (lane-speed lane-B) (lane-type lane-B)))
-  (set! lane-C (lane (lane-height lane-C) (lane-dir lane-C) (move-lane-wrap lane-C) (lane-speed lane-C) (lane-type lane-C)))
-  (set! lane-D (lane (lane-height lane-D) (lane-dir lane-D) (move-lane-wrap lane-D) (lane-speed lane-D) (lane-type lane-D)))
-  (set! lane-E (lane (lane-height lane-E) (lane-dir lane-E) (move-lane-wrap lane-E) (lane-speed lane-E) (lane-type lane-E)))
-  (set! lane-F (lane (lane-height lane-F) (lane-dir lane-F) (move-lane-wrap lane-F) (lane-speed lane-F) (lane-type lane-F)))
-  (set! lane-G (lane (lane-height lane-G) (lane-dir lane-G) (move-lane-wrap lane-G) (lane-speed lane-G) (lane-type lane-G)))
-  (set! lane-H (lane (lane-height lane-H) (lane-dir lane-H) (move-lane-wrap lane-H) (lane-speed lane-H) (lane-type lane-H)))
+(define (game-loop)
+  (frog-lane-interaction lane-A)
+  (frog-lane-interaction lane-B)
+  (frog-lane-interaction lane-C)
+  (frog-lane-interaction lane-D)
+  (frog-lane-interaction lane-E)
+  (frog-lane-interaction lane-F)
+  (frog-lane-interaction lane-G)
+  (frog-lane-interaction lane-H)
+  (set! lane-A (move-lane-tick lane-A))
+  (set! lane-B (move-lane-tick lane-B))
+  (set! lane-C (move-lane-tick lane-C))
+  (set! lane-D (move-lane-tick lane-D))
+  (set! lane-E (move-lane-tick lane-E))
+  (set! lane-F (move-lane-tick lane-F))
+  (set! lane-G (move-lane-tick lane-G))
+  (set! lane-H (move-lane-tick lane-H))
   (when (eq? frog-stuck 1) (set! game-frog (move-frog-log game-frog)))
-  (send canvas  on-paint)
+  (send frogger-canvas on-paint)
   (sleep/yield 0.02)
-  (loop))
+  (game-loop))
 
-(loop)
+(game-loop)
  

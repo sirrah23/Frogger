@@ -59,15 +59,18 @@
          lane-height dir (- numvehiclesleft 1))))
   (inner-make-lane '() lane-height dir numvehicles))
  
-(define lane-A (make-lane (- HEIGHT 100) -1 3 150 50 8 'car))
-(define lane-B (make-lane (- HEIGHT 150) 1 3 150 50 3 'car))
-(define lane-C (make-lane (- HEIGHT 300) -1 3 150 50 8 'car))
-(define lane-D (make-lane (- HEIGHT 350) 1 3 150 50 7 'car))
-(define lane-E (make-lane (- HEIGHT 500) 1 3 150 50 7 'car))
-(define lane-F (make-lane (- HEIGHT 600) -1 3 150 50 8 'log))
-(define lane-G (make-lane (- HEIGHT 700) 1 3 150 50 8 'log))
-(define lane-H (make-lane (- HEIGHT 750) -1 3 150 50 8 'log))
-(define all-lanes (list lane-A lane-B lane-C lane-D lane-E lane-F lane-G lane-H))
+(define (generate-all-lanes)
+  (let ([lane-A (make-lane (- HEIGHT 100) -1 3 150 50 8 'car)]
+        [lane-B (make-lane (- HEIGHT 150) 1 3 150 50 3 'car) ]
+        [lane-C (make-lane (- HEIGHT 300) -1 3 150 50 8 'car)]
+        [lane-D (make-lane (- HEIGHT 350) 1 3 150 50 7 'car) ]
+        [lane-E (make-lane (- HEIGHT 500) 1 3 150 50 7 'car) ]
+        [lane-F (make-lane (- HEIGHT 600) -1 3 150 50 8 'log)]
+        [lane-G (make-lane (- HEIGHT 700) 1 3 150 50 8 'log) ]
+        [lane-H (make-lane (- HEIGHT 750) -1 3 150 50 8 'log)])
+    (list lane-A lane-B lane-C lane-D lane-E lane-F lane-G lane-H)))
+    
+(define all-lanes (generate-all-lanes))
 
 (define (show-rect r brush)
   (send frogger-dc set-brush brush)

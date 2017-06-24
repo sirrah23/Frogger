@@ -35,14 +35,20 @@
 (define frogger-canvas (new frogger-canvas-class
                             [parent frogger-frame]
                             [paint-callback (lambda (canvas dc)
+                                              ; Note: Suspend flushing of events when drawing the
+                                              ; canvas so that we don't experience awkward
+                                              ; flickering
+                                              (send canvas suspend-flush) 
                                               (send dc clear)
                                               (show-lanes)
-                                              (show-frog))]))
+                                              (show-frog)
+                                              (send canvas resume-flush))]))
 
 (define frogger-dc (send frogger-canvas get-dc))
 
 (send frogger-frame show #t)
 
+; Game Structs and Behavior
 (struct pos (x y))
 (struct rect (pos width height))
 (struct lane (height dir vehicles speed type))
@@ -174,7 +180,7 @@
   (sleep/yield 5)
   (reset-frog))
 
-; TODO - Collission Logic and World Update function
+; Main Game Loop
 (define (game-loop)
   (let ([win-flag (win? game-frog)])
     (frog-lanes-interaction)

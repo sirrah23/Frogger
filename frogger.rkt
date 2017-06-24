@@ -105,7 +105,7 @@
   (set! game-frog (frog (rect (pos (- (/ WIDTH 2) 25) (- HEIGHT 50)) 50 50) (pos 0 0))))
 
 (define (move-frog f dispx dispy)
-  (frog (move-rect (frog-rect f) dispx dispy) (pos 0 0)))
+  (frog (move-rect-bound (frog-rect f) dispx dispy) (pos 0 0)))
 
 (define (move-frog-log f)
   (move-frog f (pos-x (frog-vel f)) 0))
@@ -134,6 +134,13 @@
         [new-pos-y(+ (pos-y (rect-pos r)) dispy)])
     (cond [(> new-pos-x WIDTH) (rect (pos (- 0 (rect-width r)) new-pos-y) (rect-width r) (rect-height r))]
           [(< (+ new-pos-x (rect-width r)) 0) (rect (pos WIDTH new-pos-y) (rect-width r) (rect-height r))]
+          [else (rect (pos new-pos-x new-pos-y) (rect-width r) (rect-height r))])))
+
+(define (move-rect-bound r dispx dispy)
+  (let ([new-pos-x (+ (pos-x (rect-pos r)) dispx)]
+        [new-pos-y(+ (pos-y (rect-pos r)) dispy)])
+    (cond [(< new-pos-x 0) (rect (pos 0 new-pos-y) (rect-width r) (rect-height r))]
+          [(> (+ new-pos-x (rect-width r)) WIDTH) (rect (pos (- WIDTH (rect-width r)) new-pos-y) (rect-width r) (rect-height r))]
           [else (rect (pos new-pos-x new-pos-y) (rect-width r) (rect-height r))])))
 
 (define (move-lane-wrap lane)

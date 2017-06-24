@@ -163,14 +163,26 @@
 (define (collission-lane rect lane)
   (ormap (lambda (b) b) (map (lambda (x) (collission-rects rect x)) (lane-vehicles lane))))
 
+(define (win? f)
+  (if (eq? (pos-y (rect-pos (frog-rect f))) 0)
+      #t
+      #f))
+
+(define (win-and-reset)
+  (send frogger-dc set-text-foreground "black")
+  (send frogger-dc draw-text "YOU WIN!" (/ WIDTH 2) (/ HEIGHT 2))
+  (sleep/yield 5)
+  (reset-frog))
+
 ; TODO - Collission Logic and World Update function
-; TODO - Win condition check
 (define (game-loop)
-  (frog-lanes-interaction)
-  (move-lanes-tick)
-  (when (eq? frog-stuck 1) (set! game-frog (move-frog-log game-frog)))
-  (send frogger-canvas on-paint)
-  (sleep/yield 0.02)
-  (game-loop))
+  (let ([win-flag (win? game-frog)])
+    (frog-lanes-interaction)
+    (move-lanes-tick)
+    (when (eq? frog-stuck 1) (set! game-frog (move-frog-log game-frog)))
+    (send frogger-canvas on-paint)
+    (sleep/yield 0.02)
+    (when win-flag (win-and-reset)) ; Use this flag so frog will be drawn before win message
+    (game-loop)))
 
 (game-loop)

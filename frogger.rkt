@@ -60,21 +60,26 @@
     (if (eq? 0 numvehiclesleft) (lane lane-height dir vehicles speed type)
         (inner-make-lane
          (cons
-          (rect (pos (+ (* 3 STEP (- numvehicles numvehiclesleft)) (* vehicle-width (- numvehicles numvehiclesleft))) lane-height)
-                vehicle-width vehicle-height) vehicles)
+          (rect
+           (pos (+ (* 3 STEP (- numvehicles numvehiclesleft))
+                   (* vehicle-width (- numvehicles numvehiclesleft)))
+                lane-height)
+                vehicle-width
+                vehicle-height) vehicles)
          lane-height dir (- numvehiclesleft 1))))
   (inner-make-lane '() lane-height dir numvehicles))
  
 (define (generate-all-lanes)
   (let ([lane-A (make-lane (- HEIGHT 100) -1 3 150 50 8 'car)]
-        [lane-B (make-lane (- HEIGHT 150) 1 3 150 50 3 'car) ]
+        [lane-B (make-lane (- HEIGHT 200) 1 3 150 50 3 'car) ]
         [lane-C (make-lane (- HEIGHT 300) -1 3 150 50 8 'car)]
-        [lane-D (make-lane (- HEIGHT 350) 1 3 150 50 7 'car) ]
-        [lane-E (make-lane (- HEIGHT 500) 1 3 150 50 7 'car) ]
+        [lane-D (make-lane (- HEIGHT 400) 1 3 150 50 7 'car) ]
+        [lane-E (make-lane (- HEIGHT 450) -1 3 150 50 7 'car) ]
         [lane-F (make-lane (- HEIGHT 600) -1 3 150 50 8 'log)]
-        [lane-G (make-lane (- HEIGHT 700) 1 3 150 50 8 'log) ]
-        [lane-H (make-lane (- HEIGHT 750) -1 3 150 50 8 'log)])
-    (list lane-A lane-B lane-C lane-D lane-E lane-F lane-G lane-H)))
+        [lane-G (make-lane (- HEIGHT 650) 1 3 150 50 8 'log)]
+        [lane-H (make-lane (- HEIGHT 700) -1 3 150 50 3 'log) ]
+        [lane-I (make-lane (- HEIGHT 750) 1 3 150 50 8 'log)])
+    (list lane-A lane-B lane-C lane-D lane-E lane-F lane-G lane-H lane-I)))
     
 (define all-lanes (generate-all-lanes))
 
